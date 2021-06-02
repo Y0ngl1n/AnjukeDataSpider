@@ -6,13 +6,201 @@ import time
 import xlwt
 import sqlite3
 import os
-from Anjukedistrictspider import *
 
 ssl._create_default_https_context = ssl._create_unverified_context
+showdistrictname = []
+showstreetname = []
+districtDict = {"未央": "weiyangq", "雁塔": "yantaqu", "高新": "gaoxinxa", "经开区": "jingkaiqux", "莲湖": "lianhuqu",
+                "碑林": "beilinqu", "长安": "changanb", "新城": "xinchengqu", "曲江新区": "qujiangxinqu", "灞桥": "baqiaoqu",
+                "高陵": "gaoling", "浐灞": "chanba", "临潼": "lintongqu", "西咸新区": "xixianxinqu", "鄠邑": "huyiqu",
+                "大兴新区": "daxingxinqu", "周至": "zhouzhixian", "蓝田": "lantianxian", "阎良": "yanliangqu",
+                "西安周边": "xianzhoubianc", "国际港务区": "gjgwqxa", }
+def showDistrictnames():
+    for key in districtDict.keys():
+        showdistrictname.append(key)
+    print(showdistrictname)
 
+def getpinOfstreet(districtname):
+
+    url = "https://xa.zu.anjuke.com/fangyuan/"+districtname
+    head = {
+    "method": "GET",
+    "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
+    "accept-language": "zh-CN,zh;q=0.9",
+    "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Safari/537.36"
+}
+    request = urllib.request.Request(url, headers=head)
+    response = urllib.request.urlopen(request)
+    html = response.read().decode("utf-8")
+    bs = BeautifulSoup(html, "html.parser")
+    districtinfos = bs.find_all('div',class_="sub-items sub-level2")[0]
+    districtinfo = str(districtinfos)
+
+    pattern1 = re.compile(r'<a href="https://xa.zu.anjuke.com/fangyuan/.*-q-(.*)/" title=".*">.*</a>', re.M)
+    pattern2 = re.compile(r'<a href="https://xa.zu.anjuke.com/fangyuan/.*" title=".*">(.*)</a>', re.M)
+    result1 = re.findall(pattern1, districtinfo)
+    result2 = re.findall(pattern2, districtinfo)
+    streetDict = dict(zip(result2,result1))
+    return streetDict
+
+def getpinOfdistrict():
+
+    url = "https://xa.zu.anjuke.com/fangyuan/"
+    head = {
+    "method": "GET",
+    "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
+    "accept-language": "zh-CN,zh;q=0.9",
+    "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Safari/537.36"
+}
+    request = urllib.request.Request(url, headers=head)
+    response = urllib.request.urlopen(request)
+    html = response.read().decode("utf-8")
+    bs = BeautifulSoup(html, "html.parser")
+    districtinfos = bs.find_all('div',class_="sub-items sub-level1")[0]
+    districtinfo = str(districtinfos)
+
+    pattern1 = re.compile(r'<a href="https://xa.zu.anjuke.com/fangyuan/.*" title=".*">(.*)</a>', re.M)
+    pattern2 = re.compile(r'<a href="https://xa.zu.anjuke.com/fangyuan/(.*)/" title=".*">.*</a>', re.M)
+    result1 = re.findall(pattern1, districtinfo)
+    result2 = re.findall(pattern2, districtinfo)
+    districtDict = dict(zip(result1,result2))
+    return districtDict
+
+districtDict = getpinOfdistrict()
+#各区所含街道以及对应的url作为键值对的字典
+weiyangqDict = getpinOfstreet(districtDict["未央"])
+yantaquDict = getpinOfstreet(districtDict["雁塔"])
+gaoxinxaDict = getpinOfstreet(districtDict["高新区"])
+jingkaiquxDict = getpinOfstreet(districtDict["经开区"])
+lianhuquDict = getpinOfstreet(districtDict["莲湖"])
+beilinquDict = getpinOfstreet(districtDict["碑林"])
+changanbDict = getpinOfstreet(districtDict["长安"])
+xinchengquDict = getpinOfstreet(districtDict["新城"])
+qujiangxinquDict = getpinOfstreet(districtDict["曲江新区"])
+baqiaoquDict = getpinOfstreet(districtDict["灞桥"])
+gaolingDict = getpinOfstreet(districtDict["高陵"])
+chanbaDict = getpinOfstreet(districtDict["浐灞"])
+lintongquDict = getpinOfstreet(districtDict["临潼"])
+xixianxinquDict = getpinOfstreet(districtDict["西咸新区"])
+huyiquDict = getpinOfstreet(districtDict["鄠邑"])
+daxingxinquDict = getpinOfstreet(districtDict["大兴新区"])
+zhouzhixianDict = getpinOfstreet(districtDict["周至"])
+lantianxianDict = getpinOfstreet(districtDict["蓝田"])
+yanliangquDict = getpinOfstreet(districtDict["阎良"])
+xianzhoubiancDict = getpinOfstreet(districtDict["西安周边"])
+gjgwqxaDict = getpinOfstreet(districtDict["国际港务区"])
+
+def showStreetnames(dict):
+    for street in dict.keys():
+        showstreetname.append(street)
+    print(showstreetname)
+def urlsearchBylocation():
+    showDistrictnames()
+    cndistrict = input("请输入区名：")
+    pinyindistrict = districtDict[cndistrict]
+
+    if cndistrict =="未央":
+        showStreetnames(weiyangqDict)
+    elif cndistrict =="雁塔":
+        showStreetnames(yantaquDict)
+    elif cndistrict =="高新区":
+        showStreetnames(gaoxinxaDict)
+    elif cndistrict =="经开区":
+        showStreetnames(jingkaiquxDict)
+    elif cndistrict =="莲湖":
+        showStreetnames(lianhuquDict)
+    elif cndistrict =="碑林":
+        showStreetnames(beilinquDict)
+    elif cndistrict =="长安":
+        showStreetnames(changanbDict)
+    elif cndistrict =="新城":
+        showStreetnames(xinchengquDict)
+    elif cndistrict =="曲江新区":
+        showStreetnames(qujiangxinquDict)
+    elif cndistrict =="灞桥":
+        showStreetnames(baqiaoquDict)
+    elif cndistrict =="高陵":
+        showStreetnames(gaolingDict)
+    elif cndistrict =="浐灞":
+        showStreetnames(chanbaDict)
+    elif cndistrict =="临潼":
+        showStreetnames(lintongquDict)
+    elif cndistrict =="西咸新区":
+        showStreetnames(xixianxinquDict)
+    elif cndistrict =="鄠邑":
+        showStreetnames(huyiquDict)
+    elif cndistrict =="大兴新区":
+        showStreetnames(daxingxinquDict)
+    elif cndistrict =="周至":
+        showStreetnames(zhouzhixianDict)
+    elif cndistrict =="蓝田":
+        showStreetnames(lantianxianDict)
+    elif cndistrict =="阎良":
+        showStreetnames(yanliangquDict)
+    elif cndistrict =="西安周边":
+        showStreetnames(xianzhoubiancDict)
+    elif cndistrict =="国际港务区":
+        showStreetnames(gjgwqxaDict)
+
+    cnstreet = input("请输入街道名：")
+    if cnstreet in weiyangqDict:
+        pinyinstreet = weiyangqDict[cnstreet]
+    elif cnstreet in yantaquDict:
+        pinyinstreet = yantaquDict[cnstreet]
+    elif cnstreet in gaoxinxaDict:
+        pinyinstreet = gaoxinxaDict[cnstreet]
+    elif cnstreet in jingkaiquxDict:
+        pinyinstreet = jingkaiquxDict[cnstreet]
+    elif cnstreet in lianhuquDict:
+        pinyinstreet = lianhuquDict[cnstreet]
+    elif cnstreet in beilinquDict:
+        pinyinstreet = beilinquDict[cnstreet]
+    elif cnstreet in changanbDict:
+        pinyinstreet = changanbDict[cnstreet]
+    elif cnstreet in xinchengquDict:
+        pinyinstreet = xinchengquDict[cnstreet]
+    elif cnstreet in qujiangxinquDict:
+        pinyinstreet = qujiangxinquDict[cnstreet]
+    elif cnstreet in baqiaoquDict:
+        pinyinstreet = baqiaoquDict[cnstreet]
+    elif cnstreet in gaolingDict:
+        pinyinstreet = gaolingDict[cnstreet]
+    elif cnstreet in chanbaDict:
+        pinyinstreet = chanbaDict[cnstreet]
+    elif cnstreet in lintongquDict:
+        pinyinstreet = lintongquDict[cnstreet]
+    elif cnstreet in xixianxinquDict:
+        pinyinstreet = xixianxinquDict[cnstreet]
+    elif cnstreet in huyiquDict:
+        pinyinstreet = huyiquDict[cnstreet]
+    elif cnstreet in daxingxinquDict:
+        pinyinstreet = daxingxinquDict[cnstreet]
+    elif cnstreet in zhouzhixianDict:
+        pinyinstreet = zhouzhixianDict[cnstreet]
+    elif cnstreet in lantianxianDict:
+        pinyinstreet = lantianxianDict[cnstreet]
+    elif cnstreet in yanliangquDict:
+        pinyinstreet = yanliangquDict[cnstreet]
+    elif cnstreet in xianzhoubiancDict:
+        pinyinstreet = xianzhoubiancDict[cnstreet]
+    elif cnstreet in gjgwqxaDict:
+        pinyinstreet = gjgwqxaDict[cnstreet]
+    else:
+        return "https://xa.zu.anjuke.com/fangyuan/changanb-q-dongda/"
+    url2combine = "https://xa.zu.anjuke.com/fangyuan/" + pinyindistrict + "-q-" + pinyinstreet
+    return url2combine
+
+# MAIN PART
 datalist = []
 filename = '安居客未央大学城租房信息表.xls'
 requesturl = urlsearchBylocation()
+print(requesturl)
+#url 4 database`s saving name
+pattern_url4dbsv = re.compile(r'https://xa.zu.anjuke.com/fangyuan/(.*)')
+url4dbsv = re.findall(pattern_url4dbsv, requesturl)
+url4dbsv_rpd = url4dbsv[0].replace("-","_")
+print(url4dbsv)
+
 def geturlhtml(requesturl,datalist):
     head = {
         "method":"GET","accept":"text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9","accept-language":"zh-CN,zh;q=0.9","user-agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Safari/537.36"
@@ -30,12 +218,6 @@ def geturlhtml(requesturl,datalist):
     print("共获取到%d条租房信息"%(len(datalistresult)))
 def getHouseinfo(html,datalist):
     bs = BeautifulSoup(html,"html.parser")
-    #每一间房源的全部信息的div标签<div class="zu-itemmod"
-    #每一间房标题的标签<div class="zu-info" style="width: auto">
-    #每一间房详情<p class="details-item tag">
-    #每一间房的地址<address class="details-item">
-    #每一间房的价格<div class="zu-side">
-    #更多细节<p class="details-item bot-tag" style="width: auto">
 
     houseinfos = bs.find_all('div',class_="zu-itemmod")
     if houseinfos != []:
@@ -101,7 +283,7 @@ def saveData(datalist,filename):
     workbook.save(filename)
     print("保存数据成功")
 
-def initDb(requesturl):
+def initDb(url):
     #初始化数据库结构
     sql = '''
     create table '%s'(
@@ -115,7 +297,7 @@ def initDb(requesturl):
     elevator varchar ,
     detailsite text
     )
-    '''%requesturl
+    '''%url
     # databaseName = "Anjuke-"+ locationIndex
     conn = sqlite3.connect("Anjuke_Data.db")
     cur = conn.cursor()
@@ -123,10 +305,10 @@ def initDb(requesturl):
     conn.commit()
     conn.close()
 
-def insert2Db(datalist,requesturl):
+def insert2Db(datalist,url):
     #判断database文件是否存在
     filedir = './Anjuke_Data.db'
-    initDb(requesturl)
+    initDb(url)
     conn = sqlite3.connect("Anjuke_Data.db")
     cur = conn.cursor()
     for data in datalist:
@@ -135,7 +317,7 @@ def insert2Db(datalist,requesturl):
                 continue
             data[index] = "'"+data[index]+"'"
         sql = '''
-        insert into '%s' (title,price,structure,address,renttype,direction,elevator,detailsite)values(%s)''' %(requesturl, ",".join(data))
+        insert into '%s' (title,price,structure,address,renttype,direction,elevator,detailsite)values(%s)''' %(url, ",".join(data))
 
         cur.execute(sql)
 
@@ -181,5 +363,5 @@ def average_Price(rooms):
 
 if __name__ == '__main__':
     geturlhtml(requesturl,datalist)
-    # saveData(datalist,filename)
-    insert2Db(datalist,requesturl)
+    # saveData(datalist,filename) 以表格的形式储存
+    insert2Db(datalist,url4dbsv_rpd)
