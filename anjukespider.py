@@ -5,26 +5,28 @@ import re
 import time
 import xlwt
 import sqlite3
+import os
+from Anjukedistrictspider import *
 
 ssl._create_default_https_context = ssl._create_unverified_context
-requesturl = "https://xa.zu.anjuke.com/fangyuan/chanba-q-chengbeidaxuecheng/"
+
 datalist = []
 filename = '安居客未央大学城租房信息表.xls'
-
+requesturl = urlsearchBylocation()
 def geturlhtml(requesturl,datalist):
     head = {
         "method":"GET","accept":"text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9","accept-language":"zh-CN,zh;q=0.9","user-agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Safari/537.36"
     }
-    for i in range(10):
+    for i in range(30):
         print("第%d页信息获取中..."%(i+1))
-        url = requesturl+"p"+str(i+1)+"/"
+        url = requesturl+"/p"+str(i+1)+"/"
         request = urllib.request.Request(url,headers=head)
         response = urllib.request.urlopen(request)
         html = response.read().decode("utf-8")
         datalistresult = getHouseinfo(html,datalist)
         print("第%s页内容获取完毕"%(i+1))
 
-        time.sleep(1)
+        time.sleep(0.5)
     print("共获取到%d条租房信息"%(len(datalistresult)))
 def getHouseinfo(html,datalist):
     bs = BeautifulSoup(html,"html.parser")
@@ -39,7 +41,7 @@ def getHouseinfo(html,datalist):
     if houseinfos != []:
         lenhouseinfos = len(houseinfos)
         print("该页共有%d条房屋信息"%lenhouseinfos)
-        time.sleep(1)
+        time.sleep(0.5)
         for i in range(len(houseinfos)):
             houseinfo = str(houseinfos[i])
             data = []
@@ -82,9 +84,8 @@ def getHouseinfo(html,datalist):
                 data.append(housedetailsite[0])
             datalist.append(data)
             print(data)
-
     else:
-        print("网页待验证或无数据...")
+        print("该网页待验证或无数据...")
     return datalist
 
 def saveData(datalist,filename):
@@ -100,10 +101,10 @@ def saveData(datalist,filename):
     workbook.save(filename)
     print("保存数据成功")
 
-def initDb():
+def initDb(requesturl):
     #初始化数据库结构
     sql = '''
-    create table Anjukehouseinfo(
+    create table '%s'(
     id integer primary key autoincrement,
     title varchar,
     price numeric,
@@ -114,30 +115,30 @@ def initDb():
     elevator varchar ,
     detailsite text
     )
-    '''
-    conn = sqlite3.connect("Anjuke_Daxuecheng.db")
+    '''%requesturl
+    # databaseName = "Anjuke-"+ locationIndex
+    conn = sqlite3.connect("Anjuke_Data.db")
     cur = conn.cursor()
     cur.execute(sql)
     conn.commit()
     conn.close()
 
-def insert2Db(datalist):
-    #录入数据
-    initDb()
-    conn = sqlite3.connect("Anjuke_Daxuecheng.db")
+def insert2Db(datalist,requesturl):
+    #判断database文件是否存在
+    filedir = './Anjuke_Data.db'
+    initDb(requesturl)
+    conn = sqlite3.connect("Anjuke_Data.db")
     cur = conn.cursor()
-
     for data in datalist:
         for index in range(len(data)):
             if index == 1:
                 continue
             data[index] = "'"+data[index]+"'"
         sql = '''
-        insert into Anjukehouseinfo (title,price,structure,address,renttype,direction,elevator,detailsite)
-        values(%s)
-        ''' %",".join(data)
+        insert into '%s' (title,price,structure,address,renttype,direction,elevator,detailsite)values(%s)''' %(requesturl, ",".join(data))
 
         cur.execute(sql)
+
     conn.commit()
     conn.close()
 
@@ -179,7 +180,6 @@ def average_Price(rooms):
     return averageprice
 
 if __name__ == '__main__':
-    # geturlhtml(requesturl,datalist)
+    geturlhtml(requesturl,datalist)
     # saveData(datalist,filename)
-    # insert2Db(datalist)
-    is_room_shared()
+    insert2Db(datalist,requesturl)
